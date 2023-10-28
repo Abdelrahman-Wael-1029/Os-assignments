@@ -112,18 +112,10 @@ public class Terminal {
         if (args.length == 0) {
             // Change to home directory
             System.setProperty("user.dir", System.getProperty("user.home"));
-        } else if (args[0].matches("..[/\\\\]*")) {
-            // Change to parent directory
-            File currentDir = new File(System.getProperty("user.dir"));
-            System.setProperty("user.dir", currentDir.getParent());
-        } else if (!args[0].matches(".[/\\\\]*")) {
-            // Change to the specified directory using paths
-            if (args[0].length() > 1 && args[0].startsWith("\"") && args[0].endsWith("\"")) {
-                args[0] = args[0].substring(1, args[0].length() - 1);
-            }
-            Path path = Paths.get(args[0]);
+        } else {
+            Path path = Paths.get(args[0]).normalize();
             if (!path.isAbsolute()) {
-                path = Paths.get(System.getProperty("user.dir"), args[0]);
+                path = Paths.get(System.getProperty("user.dir"), args[0]).normalize();
             }
             if (Files.exists(path)) {
                 System.setProperty("user.dir", path.toString());

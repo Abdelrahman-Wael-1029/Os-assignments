@@ -53,7 +53,7 @@ class Parser {
 
 public class Terminal {
     Parser parser;
-    String[] commandHistory = new String[100];
+    ArrayList<String> commandHistory = new ArrayList<>();
 
     public Terminal() {
         parser = new Parser();
@@ -64,6 +64,8 @@ public class Terminal {
     public void chooseCommandAction() throws IOException {
         System.out.print(pwd() + " > ");
         String input = new Scanner(System.in).nextLine();
+        commandHistory.add(input);
+
         // Parse the input
         boolean parsed = parser.parse(input);
         if (!parsed) {
@@ -94,7 +96,6 @@ public class Terminal {
             default -> System.out.println("Unknown command: " + commandName);
         }
     }
-
 
     // Implement each command in a method
     public void echo(String[] args) {
@@ -135,8 +136,9 @@ public class Terminal {
 
             // Print the file names
             for (File file : files) {
-                System.out.println(file.getName());
+                System.out.print(file.getName() + "    ");
             }
+            System.out.println();
         }
     }
 
@@ -150,8 +152,9 @@ public class Terminal {
 
             // Print the file names
             for (File file : files) {
-                System.out.println(file.getName());
+                System.out.print(file.getName() + "    ");
             }
+            System.out.println();
         }
     }
 
@@ -181,7 +184,8 @@ public class Terminal {
         }
     }
 
-    // DONE TILL HERE ----------------------------------------------------------------------------
+    // DONE TILL HERE
+    // ----------------------------------------------------------------------------
 
     public void touch(String[] args) throws IOException {
         for (String arg : args) {
@@ -200,35 +204,64 @@ public class Terminal {
     }
 
     public void cp(String[] args) throws IOException {
+        if (args.length != 2) {
+            System.out.println("Invalid usage: cp [source] [target]");
+            return;
+        }
         File sourceFile = new File(args[0]);
         File targetFile = new File(args[1]);
-
+        // Takes 2 arguments, both are files and copies the first onto the second.
         if (!sourceFile.exists()) {
             System.out.println("Source file does not exist: " + args[0]);
-        } else if (!targetFile.getParentFile().exists()) {
-            System.out.println("Target directory does not exist: " + targetFile.getParentFile().getPath());
+        } else if (!targetFile.exists()) {
+            System.out.println("Target file does not exist: " + targetFile.getParentFile().getPath());
         } else {
-            Files.copy(sourceFile.toPath(), targetFile.toPath());
+            Files.copy(sourceFile.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
         }
     }
 
     public void cpRecursive(String[] args) throws IOException {
-        File sourceFile = new File(args[0]);
-        File targetFile = new File(args[1]);
-
-        if (!sourceFile.exists()) {
-            System.out.println("Source file does not exist: " + args[0]);
-        } else if (!targetFile.getParentFile().exists()) {
-            System.out.println("Target directory does not exist: " + targetFile.getParentFile().getPath());
+        if (args.length != 2) {
+            System.out.println("Invalid usage: cp -r [source] [target]");
+            return;
+        }
+        // Takes 2 arguments, both are directories (empty or not) and copies the first
+        // directory (with all its content) into the second one.
+        File sourceDir = new File(args[0]);
+        File targetDir = new File(args[1]);
+        if (!sourceDir.exists()) {
+            System.out.println("Source directory does not exist: " + args[0]);
+        } else if (!targetDir.exists()) {
+            System.out.println("Target directory does not exist: " + targetDir.getParentFile().getPath());
         } else {
-            Files.walk(sourceFile.toPath()).forEach(source -> {
+            Files.walk(sourceDir.toPath()).forEach(source -> {
+                Path target = targetDir.toPath().resolve(sourceDir.toPath().relativize(source));
                 try {
-                    Files.copy(source, targetFile.toPath().resolve(sourceFile.toPath().relativize(source)));
+                    //  source to target if not empty
+                    Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
                 } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    e.getMessage();
                 }
             });
         }
+        /*
+         * Files.walk(sourceDir.toPath()) returns a Stream of all files and directories
+         * in the sourceDir directory and its subdirectories.
+         * forEach(source -> {...}) applies the given function to each element of the
+         * stream, which in this case is a lambda expression that takes a Path object
+         * called source.
+         * Path target =
+         * targetDir.toPath().resolve(sourceDir.toPath().relativize(source)); creates a
+         * Path object called target that represents the corresponding path in the
+         * targetDir directory
+         * for the source path. This is done by first getting the relative path of
+         * source with respect to sourceDir, and then resolving it against targetDir.
+         * Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING); copies the
+         * file or directory represented by source to the corresponding path represented
+         * by target, with the option to replace the target file if it already exists.
+         * If an IOException occurs during the copy operation, it is caught and the
+         * stack trace is printed to the console using e.printStackTrace().
+         */
     }
 
     public void rm(String[] args) {
@@ -265,7 +298,6 @@ public class Terminal {
                 System.out.println("File does not exist: " + args[1]);
                 return;
             }
-
             String output = Files.readString(file1.toPath()) + Files.readString(file2.toPath());
             System.out.println(output);
         } else {
@@ -274,6 +306,10 @@ public class Terminal {
     }
 
     public void wc(String[] args) throws IOException {
+        if (args.length != 1) {
+            System.out.println("Invalid usage: wc [file]");
+            return;
+        }
         File file = new File(args[0]);
         if (!file.exists()) {
             System.out.println("File does not exist: " + args[0]);
@@ -300,11 +336,8 @@ public class Terminal {
     }
 
     public void history() {
-        for (String s : commandHistory) {
-            if (s == null) {
-                break;
-            }
-            System.out.println(s);
+        for (int i = 0; i < commandHistory.size(); ++i) {
+            System.out.println(i + 1 + " " + commandHistory.get(i));
         }
     }
 

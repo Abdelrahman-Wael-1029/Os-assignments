@@ -23,20 +23,22 @@ class Parser {
         for (int i = start; i < parts.length; ++i) {
             if (parts[i].startsWith("\"")) {
                 // Combine the parts of the argument into a single string
-                StringBuilder arg = new StringBuilder(parts[i++]);
-                while (i < parts.length && !parts[i].endsWith("\"")) {
-                    arg.append(" ").append(parts[i]);
+                StringBuilder arg = new StringBuilder(parts[i]);
+                while (i + 1 < parts.length && !parts[i + 1].endsWith("\"")) {
+                    arg.append(" ").append(parts[i + 1]);
                     ++start;
                     ++i;
                 }
-                if (i != parts.length) {
-                    arg.append(" ").append(parts[i]);
+                if (i + 1 != parts.length) {
+                    arg.append(" ").append(parts[i++ + 1]);
+                    ++start;
                 }
-                args[i - ++start] = arg.toString();
+                args[i - start] = arg.toString();
                 continue;
             }
             args[i - start] = parts[i];
         }
+        args = Arrays.copyOf(args, parts.length - start);
         return true;
     }
 
@@ -110,13 +112,13 @@ public class Terminal {
         if (args.length == 0) {
             // Change to home directory
             System.setProperty("user.dir", System.getProperty("user.home"));
-        } else if (args[0].equals("..")) {
+        } else if (args[0].matches("..[/\\\\]*")) {
             // Change to parent directory
             File currentDir = new File(System.getProperty("user.dir"));
             System.setProperty("user.dir", currentDir.getParent());
-        } else if (!args[0].equals(".")) {
+        } else if (!args[0].matches(".[/\\\\]*")) {
             // Change to the specified directory using paths
-            if (args[0].startsWith("\"") && args[0].endsWith("\"")) {
+            if (args[0].length() > 1 && args[0].startsWith("\"") && args[0].endsWith("\"")) {
                 args[0] = args[0].substring(1, args[0].length() - 1);
             }
             Path path = Paths.get(args[0]);
@@ -163,33 +165,42 @@ public class Terminal {
 
     public void mkdir(String[] args) {
         for (String arg : args) {
+            if (arg.length() > 1 && arg.startsWith("\"") && arg.endsWith("\"")) {
+                arg = arg.substring(1, arg.length() - 1);
+            }
             File newDir = new File(arg);
-            if (newDir.mkdir()) {
-                System.out.println("Directory created successfully");
-            } else {
-                System.out.println("Failed to create directory");
+            if (!newDir.mkdir()) {
+                System.out.println("Directory name is invalid: " + arg);
             }
         }
     }
 
     public void rmdir(String[] args) {
         for (String arg : args) {
+            if (arg.length() > 1 && arg.startsWith("\"") && arg.endsWith("\"")) {
+                arg = arg.substring(1, arg.length() - 1);
+            }
             File dirToDelete = new File(arg);
-            if (!dirToDelete.exists()) {
+            if (!dirToDelete.exists() || !dirToDelete.isDirectory()) {
                 System.out.println("Directory does not exist: " + arg);
-            } else if (Objects.requireNonNull(dirToDelete.listFiles()).length > 0) {
-                System.out.println("Directory is not empty: " + arg);
-            } else {
-                dirToDelete.delete();
+            } else if (!dirToDelete.delete()) {
+                System.out.println("Failed to delete directory (not empty?): " + arg);
             }
         }
     }
 
+    // DONE TILL HERE ----------------------------------------------------------------------------
+
     public void touch(String[] args) throws IOException {
         for (String arg : args) {
+            if (arg.length() > 1 && arg.startsWith("\"") && arg.endsWith("\"")) {
+                arg = arg.substring(1, arg.length() - 1);
+            }
             File newFile = new File(arg);
             if (!newFile.exists()) {
-                newFile.createNewFile();
+                if (!newFile.createNewFile()) {
+                    System.out.println("Failed to create file: " + arg);
+                }
             } else {
                 System.out.println("File already exists: " + arg);
             }

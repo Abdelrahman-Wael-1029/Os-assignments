@@ -23,13 +23,15 @@ class Parser {
         for (int i = start; i < parts.length; ++i) {
             if (parts[i].startsWith("\"")) {
                 // Combine the parts of the argument into a single string
-                StringBuilder arg = new StringBuilder(parts[i++].substring(1));
+                StringBuilder arg = new StringBuilder(parts[i++]);
                 while (i < parts.length && !parts[i].endsWith("\"")) {
                     arg.append(" ").append(parts[i]);
                     ++start;
                     ++i;
                 }
-                arg.append(" ").append(parts[i], 0, parts[i].length() - 1);
+                if (i != parts.length) {
+                    arg.append(" ").append(parts[i]);
+                }
                 args[i - ++start] = arg.toString();
                 continue;
             }
@@ -114,6 +116,9 @@ public class Terminal {
             System.setProperty("user.dir", currentDir.getParent());
         } else if (!args[0].equals(".")) {
             // Change to the specified directory using paths
+            if (args[0].startsWith("\"") && args[0].endsWith("\"")) {
+                args[0] = args[0].substring(1, args[0].length() - 1);
+            }
             Path path = Paths.get(args[0]);
             if (!path.isAbsolute()) {
                 path = Paths.get(System.getProperty("user.dir"), args[0]);

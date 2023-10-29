@@ -63,8 +63,10 @@ public class Terminal {
     // ... Implement other commands
 
     public void chooseCommandAction() throws IOException {
-        System.out.print(pwd() + " > ");
+        System.out.print("> ");
         String input = new Scanner(System.in).nextLine();
+        commandHistory.add(input);
+
         // Parse the input
         boolean parsed = parser.parse(input);
         if (!parsed) {
@@ -98,7 +100,6 @@ public class Terminal {
 
     // Implement each command in a method
     public void echo(String[] args) {
-        commandHistory.add("echo");
         for (String arg : args) {
             System.out.print(arg + ' ');
         }
@@ -106,16 +107,18 @@ public class Terminal {
     }
 
     public String pwd() {
-        commandHistory.add("pwd");
         return System.getProperty("user.dir");
     }
 
     public void cd(String[] args) {
-        commandHistory.add("cd");
         if (args.length == 0) {
             // Change to home directory
             System.setProperty("user.dir", System.getProperty("user.home"));
         } else {
+            // remove quotes if present
+            if (args[0].length() > 1 && args[0].startsWith("\"") && args[0].endsWith("\"")) {
+                args[0] = args[0].substring(1, args[0].length() - 1);
+            }
             Path path = Paths.get(args[0]).normalize();
             if (!path.isAbsolute()) {
                 path = Paths.get(System.getProperty("user.dir"), args[0]).normalize();
@@ -129,7 +132,6 @@ public class Terminal {
     }
 
     public void ls() {
-        commandHistory.add("ls");
         File currentDir = new File(System.getProperty("user.dir"));
         File[] files = currentDir.listFiles();
 
@@ -146,7 +148,6 @@ public class Terminal {
     }
 
     public void lsReverse() {
-        commandHistory.add("ls -r");
         File currentDir = new File(System.getProperty("user.dir"));
         File[] files = currentDir.listFiles();
 
@@ -163,7 +164,6 @@ public class Terminal {
     }
 
     public void mkdir(String[] args) {
-        commandHistory.add("mkdir");
         for (String arg : args) {
             if (arg.length() > 1 && arg.startsWith("\"") && arg.endsWith("\"")) {
                 arg = arg.substring(1, arg.length() - 1);
@@ -176,7 +176,6 @@ public class Terminal {
     }
 
     public void rmdir(String[] args) {
-        commandHistory.add("rmdir");
         for (String arg : args) {
             if (arg.length() > 1 && arg.startsWith("\"") && arg.endsWith("\"")) {
                 arg = arg.substring(1, arg.length() - 1);
@@ -191,7 +190,6 @@ public class Terminal {
     }
 
     public void touch(String[] args) throws IOException {
-        commandHistory.add("touch");
         for (String arg : args) {
             if (arg.length() > 1 && arg.startsWith("\"") && arg.endsWith("\"")) {
                 arg = arg.substring(1, arg.length() - 1);
@@ -208,7 +206,6 @@ public class Terminal {
     }
 
     public void cp(String[] args) throws IOException {
-        commandHistory.add("cp");
         if (args.length != 2) {
             System.out.println("Invalid usage: cp [source] [target]");
             return;
@@ -232,7 +229,6 @@ public class Terminal {
     }
 
     public void cpRecursive(String[] args) throws IOException {
-        commandHistory.add("cp -r");
         if (args.length != 2) {
             System.out.println("Invalid usage: cp -r [source] [target]");
             return;
@@ -267,7 +263,7 @@ public class Terminal {
         fileStream.forEach(source -> {
             Path target = finalTargetDir.toPath().resolve(sourceDir.toPath().relativize(source));
             try {
-                //  source to target if not empty
+                // source to target if not empty
                 Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
             } catch (IOException e) {
                 System.out.println("Failed to copy " + source + " to " + target + ": " + e.getMessage());
@@ -295,7 +291,6 @@ public class Terminal {
     }
 
     public void rm(String[] args) {
-        commandHistory.add("rm");
         for (String arg : args) {
             File fileToDelete = new File(arg);
             if (!fileToDelete.exists() || !fileToDelete.isFile()) {
@@ -308,10 +303,10 @@ public class Terminal {
         }
     }
 
-    // DONE TILL HERE ----------------------------------------------------------------------------
+    // DONE TILL HERE
+    // ----------------------------------------------------------------------------
 
     public void cat(String[] args) throws IOException {
-        commandHistory.add("cat");
         if (args.length == 1) {
             // Print the contents of the specified file
             File file = new File(args[0]);
@@ -340,7 +335,6 @@ public class Terminal {
     }
 
     public void wc(String[] args) throws IOException {
-        commandHistory.add("wc");
         if (args.length != 1) {
             System.out.println("Invalid usage: wc [file]");
             return;
@@ -371,7 +365,6 @@ public class Terminal {
     }
 
     public void history() {
-        commandHistory.add("history");
         for (int i = 0; i < commandHistory.size(); ++i) {
             System.out.println(i + 1 + ". " + commandHistory.get(i));
         }

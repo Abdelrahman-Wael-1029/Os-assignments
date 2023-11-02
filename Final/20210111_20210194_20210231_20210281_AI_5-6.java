@@ -60,7 +60,6 @@ class Terminal {
         parser = new Parser();
     }
 
-    // ... Implement other commands
 
     public void chooseCommandAction() throws IOException {
         System.out.print("> ");

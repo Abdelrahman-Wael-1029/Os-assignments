@@ -60,10 +60,12 @@ class Terminal {
         parser = new Parser();
     }
 
+    // ... Implement other commands
 
     public void chooseCommandAction() throws IOException {
         System.out.print("> ");
         String input = new Scanner(System.in).nextLine();
+        commandHistory.add(input);
 
         // Parse the input
         boolean parsed = parser.parse(input);
@@ -74,9 +76,6 @@ class Terminal {
         // Get the command name and args
         String commandName = parser.getCommandName();
         String[] args = parser.getArgs();
-
-        // Add the command to the history
-        commandHistory.add(commandName);
 
         // Call the appropriate command method
         switch (commandName) {
@@ -169,7 +168,8 @@ class Terminal {
             if (arg.length() > 1 && arg.startsWith("\"") && arg.endsWith("\"")) {
                 arg = arg.substring(1, arg.length() - 1);
             }
-            File newDir = new File(arg);
+            Path path = Paths.get(System.getProperty("user.dir"), arg).normalize();
+            File newDir = new File(path.toString());
             if (!newDir.mkdir()) {
                 System.out.println("Directory name is invalid: " + arg);
             }
@@ -181,7 +181,8 @@ class Terminal {
             if (arg.length() > 1 && arg.startsWith("\"") && arg.endsWith("\"")) {
                 arg = arg.substring(1, arg.length() - 1);
             }
-            File dirToDelete = new File(arg);
+            Path path = Paths.get(System.getProperty("user.dir"), arg).normalize();
+            File dirToDelete = new File(path.toString());
             if (!dirToDelete.exists() || !dirToDelete.isDirectory()) {
                 System.out.println("Directory does not exist: " + arg);
             } else if (!dirToDelete.delete()) {
@@ -195,7 +196,8 @@ class Terminal {
             if (arg.length() > 1 && arg.startsWith("\"") && arg.endsWith("\"")) {
                 arg = arg.substring(1, arg.length() - 1);
             }
-            File newFile = new File(arg);
+            Path path = Paths.get(System.getProperty("user.dir"), arg).normalize();
+            File newFile = new File(path.toString());
             if (!newFile.exists()) {
                 if (!newFile.createNewFile()) {
                     System.out.println("Failed to create file: " + arg);
@@ -217,8 +219,11 @@ class Terminal {
         if (args[1].length() > 1 && args[1].startsWith("\"") && args[1].endsWith("\"")) {
             args[1] = args[1].substring(1, args[1].length() - 1);
         }
-        File sourceFile = new File(args[0]);
-        File targetFile = new File(args[1]);
+        Path sourcePath = Paths.get(System.getProperty("user.dir"), args[0]).normalize();
+        Path targetPath = Paths.get(System.getProperty("user.dir"), args[1]).normalize();
+
+        File sourceFile = new File(sourcePath.toString());
+        File targetFile = new File(targetPath.toString());
         // Takes 2 arguments, both are files and copies the first onto the second.
         if (!sourceFile.exists()) {
             System.out.println("Source file does not exist: " + args[0]);
@@ -242,8 +247,11 @@ class Terminal {
         }
         // Takes 2 arguments, both are directories (empty or not) and copies the first
         // directory (with all its content) into the second one.
-        File sourceDir = new File(args[0]);
-        File targetDir = new File(args[1]);
+        Path sourcePath = Paths.get(System.getProperty("user.dir"), args[0]).normalize();
+        Path targetPath = Paths.get(System.getProperty("user.dir"), args[1]).normalize();
+
+        File sourceDir = new File(sourcePath.toString());
+        File targetDir = new File(targetPath.toString());
         if (!sourceDir.exists()) {
             System.out.println("Source directory does not exist: " + args[0]);
             return;
@@ -293,7 +301,11 @@ class Terminal {
 
     public void rm(String[] args) {
         for (String arg : args) {
-            File fileToDelete = new File(arg);
+            if (arg.length() > 1 && arg.startsWith("\"") && arg.endsWith("\"")) {
+                arg = arg.substring(1, arg.length() - 1);
+            }
+            Path path = Paths.get(System.getProperty("user.dir"), arg).normalize();
+            File fileToDelete = new File(path.toString());
             if (!fileToDelete.exists() || !fileToDelete.isFile()) {
                 System.out.println("File does not exist: " + arg);
             } else {
@@ -304,22 +316,25 @@ class Terminal {
         }
     }
 
+    // DONE TILL HERE
+    // ----------------------------------------------------------------------------
+
     public void cat(String[] args) throws IOException {
         if (args.length == 1) {
             // Print the contents of the specified file
-            File file = new File(args[0]);
+            Path path = Paths.get(System.getProperty("user.dir"), args[0]).normalize();
+            File file = new File(path.toString());
             if (!file.exists()) {
                 System.out.println("File does not exist: " + args[0]);
             } else {
-                Stream<String> fileStream = Files.lines(file.toPath());
-                fileStream.forEach(System.out::println);
-                fileStream.close();
+                Files.lines(file.toPath()).forEach(System.out::println);
             }
         } else if (args.length == 2) {
             // Concatenate the contents of the two specified files and print the result
-            File file1 = new File(args[0]);
-            File file2 = new File(args[1]);
-
+            Path path1 = Paths.get(System.getProperty("user.dir"), args[0]).normalize();
+            Path path2 = Paths.get(System.getProperty("user.dir"), args[1]).normalize();
+            File file1 = new File(path1.toString());
+            File file2 = new File(path2.toString());
             if (!file1.exists()) {
                 System.out.println("File does not exist: " + args[0]);
                 return;
@@ -339,11 +354,14 @@ class Terminal {
             System.out.println("Invalid usage: wc [file]");
             return;
         }
-        File file = new File(args[0]);
+        Path path = Paths.get(System.getProperty("user.dir"), args[0]).normalize();
+        File file = new File(path.toString());
         if (!file.exists()) {
             System.out.println("File does not exist: " + args[0]);
         } else {
-            int lines = 0, words = 0, characters = 0;
+            int lines = 0;
+            int words = 0;
+            int characters = 0;
 
             BufferedReader reader = new BufferedReader(new FileReader(file));
             String line;
@@ -359,6 +377,7 @@ class Terminal {
             System.out.println("Characters: " + characters);
             System.out.println(args[0]);
         }
+
     }
 
     public void history() {
@@ -367,7 +386,7 @@ class Terminal {
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
 
         Terminal terminal = new Terminal();
 

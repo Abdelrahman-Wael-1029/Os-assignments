@@ -1,128 +1,48 @@
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Scanner;
-/* 
-can you write this program in java (take care of the print messages scenario (such as randomness and "arrived and waiting" message)) using given semaphore class:
-
-"Problem Definition:
-It is required to simulate a limited number of devices connected to a router’s Wi-Fi
-using Java threading and semaphore. Routers can be designed to limit the number of
-open connections. For example, a Router may wish to have only N connections at any
-point in time. As soon as N connections are made, the Router will not accept other
-incoming connections until an existing connection is released. Explain how
-semaphores can be used by a Router to limit the number of concurrent connections.
-Following rules should be applied:
-. The Wi-Fi number of connected devices is initially empty.
-. If a client is logged in (print a message that a client has logged in) and if it can
-be served (means that it can reach the internet), then the client should
-perform the following activities:
-. Connect
-. Perform online activity
-. Log out
-Note: these actions will be represented by printed messages, such that there is a
-random waiting time between the printed messages when a client connects, do
-some online activities and logged out.
-
-. If a client arrives and all connections are occupied, it must wait until one of
-the currently available clients finish his service and leave.
-. After a client finishes his service, he leave and one of the waiting clients (if
-exist) will connect to the internet.
-Solution Design:
-Your program must contain the following classes:
-1. Router Class: This class contains a list of connections and methods to occupy a
-connection and release a connection.
-2. Semaphore Class:
-class semaphore {
-    protected int value = 0 ;
-    protected semaphore() { value = 0 ; }
-    protected semaphore(int initial) { value = initial ; }
-    public synchronized void P() {
-    
-    value-- ;
-    if (value < 0)
-    try { wait() ; } catch( InterruptedException e ) { }
-    }
-    public synchronized void V() {
-    value++ ; if (value <= 0) notify() ;
-    }
-   }
-3. Device Class: Represent different devices (threads) that can be connected to the
-router;
-Each device has its own name (i.e. C1) and type (i.e. mobile, pc, tablet...) and it may
-perform three activities: connect, perform online activity and disconnect/logout.
-4. Network Class: This class contains the main method in which the user is asked
-for two inputs:
-. N: max number of connections a router can accept
-. TC: total number of devices that wish to connect).
-. TC lines that contain: Name of each device, and its Type.
-Program Output:
-You will print the output logs in a file, which simulates the execution order of the
-devices threads and the printed messages of each device.
-NOTE THAT: This is just an example not the only scenario that can be applied.
-Sample Input:
-What is the number of WI-FI Connections?
-2
-What is the number of devices Clients want to connect?
-4
-C1 mobile
-C2 tablet
-C3 pc
-C4 pc
-Sample Output:
-- (C1)(mobile)arrived
-- (C2)(tablet)arrived
-- Connection 1: C1 Occupied
-- Connection 2: C2 Occupied
-- C4(pc) arrived and waiting
-- C3(pc)arrived and waiting
-- Connection 1: C1 login
-- Connection 1: C1 performs online activity
-- Connection 2: C2 login
-- Connection 2: C2 performs online activity
-- Connection 1: C1 Logged out
-- Connection 1: C4 Occupied
-- Connection 1: C4 log in
-- Connection 1: C4 performs online activity
-- Connection 2: C2 Logged out
-- Connection 2: C3 Occupied
-"
-*/
+import java.util.*;
 
 class Router {
+    private final Map<Device, Integer> devices;
 
-    private List<String> devices;
+    private final List<Integer> availableConnections;
 
     public Semaphore semaphore;
 
     public Router(int maxConnections) {
+        devices = new HashMap<>();
 
-        devices = new ArrayList<>();
+        availableConnections = new ArrayList<>();
+        for (int i = 1; i <= maxConnections; i++) {
+            availableConnections.add(i);
+        }
 
         semaphore = new Semaphore(maxConnections);
     }
 
+    public int getConnection(Device device) {
+        return devices.get(device);
+    }
+
     public void occupyConnection(Device device) {
+        System.out.println(device + " arrived" + (semaphore.value <= 0 ? " and waiting" : ""));
 
         semaphore.P();
 
-        devices.add(device.getName());
+        devices.put(device, availableConnections.remove(0));
 
-        System.out.println("Connection " + devices.size() + ": " + device + " Occupied");
-
+        System.out.println("Connection " + getConnection(device) + ": " + device.getName() + " Occupied");
     }
 
     public void releaseConnection(Device device) {
+        System.out.println("Connection " + getConnection(device) + ": " + device.getName() + " Logged out");
 
-        devices.remove(device.getName());
+        availableConnections.add(devices.remove(device));
 
         semaphore.V();
-
-        System.out.println("Connection " + (devices.size() + 1) + ": " + device + " Released");
     }
 }
 
 class Semaphore {
-    protected int value = 0;
+    protected int value;
 
     protected Semaphore() {
         value = 0;
@@ -133,29 +53,25 @@ class Semaphore {
     }
 
     public synchronized void P() {
-
         value--;
-        if (value < 0)
-            try {
-                wait();
-            } catch (InterruptedException e) {
-            }
+        if (value < 0) try {
+            wait();
+        } catch (InterruptedException ignored) {
+        }
     }
 
     public synchronized void V() {
         value++;
-        if (value <= 0)
-            notify();
+        if (value <= 0) notify();
     }
 }
 
 class Device implements Runnable {
+    private final String name;
 
-    private String name;
+    private final String type;
 
-    private String type;
-
-    private Router router;
+    private final Router router;
 
     public Device(String name, String type, Router router) {
         this.name = name;
@@ -172,50 +88,37 @@ class Device implements Runnable {
     }
 
     public void run() {
-
-        System.out.println(this + " arrived");
-
-        // print "arrived and waiting" message when all connections are occupied but
-        // how?
-
         router.occupyConnection(this);
+        waitRandomTime(1, 2);
 
         login();
         onlineActivity();
         logout();
-
-        router.releaseConnection(this);
     }
 
     private void login() {
+        System.out.println("Connection " + router.getConnection(this) + ": " + getName() + " Login");
 
-        System.out.println(this + " logged in");
-
-        waitRandomTime(0, 5);
+        waitRandomTime(1, 2);
     }
 
     private void onlineActivity() {
+        System.out.println("Connection " + router.getConnection(this) + ": " + getName() + " Performs online activity");
 
-        System.out.println(this + " performs online activity");
-
-        waitRandomTime(0, 10);
+        waitRandomTime(2, 4);
     }
 
     private void logout() {
+        router.releaseConnection(this);
 
-        System.out.println(this + " logged out");
-
-        waitRandomTime(0, 5);
+        waitRandomTime(1, 2);
     }
 
     private void waitRandomTime(int min, int max) {
         try {
-
             int random = (int) (Math.random() * (max - min + 1) + min);
-
-            Thread.sleep(random * 1000);
+            Thread.sleep(random * 1000L);
         } catch (InterruptedException e) {
-
             e.printStackTrace();
         }
     }
@@ -245,7 +148,7 @@ public class Network {
 
         for (int i = 0; i < totalDevices; i++) {
 
-            System.out.println("Enter the name and type of device " + (i + 1));
+            System.out.print("Enter the name and type of device " + (i + 1) + ": ");
 
             String name = scanner.next();
             String type = scanner.next();
@@ -259,21 +162,24 @@ public class Network {
 
         List<Thread> threads = new ArrayList<>();
 
-        for (Device device : devices) {
-
-            Thread thread = new Thread(device);
+        for (int i = 0; i < totalDevices; i++) {
+            Thread thread = new Thread(devices.get(i));
 
             threads.add(thread);
 
             thread.start();
+
+            try {
+                Thread.sleep(10L);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
 
         for (Thread thread : threads) {
             try {
-
                 thread.join();
             } catch (InterruptedException e) {
-
                 e.printStackTrace();
             }
         }

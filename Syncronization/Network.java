@@ -1,4 +1,5 @@
 import java.util.*;
+import java.io.*;
 
 class Router {
     private final Map<Device, Integer> devices;
@@ -54,15 +55,17 @@ class Semaphore {
 
     public synchronized void P() {
         value--;
-        if (value < 0) try {
-            wait();
-        } catch (InterruptedException ignored) {
-        }
+        if (value < 0)
+            try {
+                wait();
+            } catch (InterruptedException ignored) {
+            }
     }
 
     public synchronized void V() {
         value++;
-        if (value <= 0) notify();
+        if (value <= 0)
+            notify();
     }
 }
 
@@ -130,6 +133,9 @@ class Device implements Runnable {
 
 public class Network {
 
+    // Define a fixed file path for the output history
+    private static final String OUTPUT_FILE_PATH = "output_history.txt";
+
     public static void main(String[] args) {
 
         Scanner scanner = new Scanner(System.in);
@@ -162,6 +168,13 @@ public class Network {
 
         List<Thread> threads = new ArrayList<>();
 
+        // Redirect output to a file
+        try {
+            System.setOut(new PrintStream(new FileOutputStream(OUTPUT_FILE_PATH, true)));
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return;
+        }
         for (int i = 0; i < totalDevices; i++) {
             Thread thread = new Thread(devices.get(i));
 
@@ -183,7 +196,10 @@ public class Network {
                 e.printStackTrace();
             }
         }
+        System.out.println("----------------------------------------");
+        // reassign to the standard output
+        System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
 
-        System.out.println("Program done");
+        System.out.println("Program done (output history is in " + OUTPUT_FILE_PATH + ")");
     }
 }

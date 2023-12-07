@@ -155,10 +155,12 @@ class Scheduler {
 
         // Loop until all processes are executed
         while (!queue.isEmpty() || nextProcess < n) {
+            boolean arrive = false;
             // Add the processes that have arrived by the current time to the queue
             while (nextProcess < n && processes[nextProcess].arrival <= currentTime) {
                 queue.add(processes[nextProcess]);
                 nextProcess++;
+                arrive = true;
             }
 
             // If the queue is not empty, then execute the process with the shortest
@@ -166,10 +168,10 @@ class Scheduler {
             if (!queue.isEmpty()) {
                 // Remove the process from the queue and add it to the execution order
                 Process current = queue.poll();
-                // if (!order.isEmpty() && current == order.get(order.size() - 1)) {
-                //     order.removeLast();
-                //     times.removeLast();
-                // }
+                if (!arrive && current == order.get(order.size() - 1)) {
+                    order.removeLast();
+                    times.removeLast();
+                }
                 order.add(current);
                 // Check if the process has finished or not
                 if (current.remaining == 1) {
@@ -292,14 +294,17 @@ class Scheduler {
 class CPU_Schedulers {
     public static void main(String[] args) {
         // Create an array of processes
-        Process[] processes = new Process[4];
-        processes[0] = new Process("P1", 0, 9, 3);
-        processes[1] = new Process("P2", 2, 6, 2);
-        processes[2] = new Process("P3", 4, 10, 1);
-        processes[3] = new Process("P4", 6, 2, 1);
-
+        int n;
+        n = 6;
+        Process[] processes = new Process[n];
+        processes[0] = new Process("P1", 0, 8, 1);
+        processes[1] = new Process("P2", 1, 4, 1);
+        processes[2] = new Process("P3", 2, 2, 1);
+        processes[3] = new Process("P4", 3, 1, 1);
+        processes[4] = new Process("P5", 4, 3, 1);
+        processes[5] = new Process("P6", 5,     2, 1);
         // Create a scheduler object with 5 processes and 2 context switching
-        Scheduler scheduler = new Scheduler(4, 0, processes);
+        Scheduler scheduler = new Scheduler(n, 0, processes);
 
         // Simulate the non-preemptive SJF scheduler
         System.out.println("Non-preemptive SJF scheduler:");

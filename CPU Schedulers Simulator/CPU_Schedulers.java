@@ -26,6 +26,7 @@ import java.util.Random;
 
 // A class to represent a process
 class Process {
+    int id; // process id
     String name; // process name
     int arrival; // arrival time
     int burst; // burst time
@@ -36,7 +37,8 @@ class Process {
     int AG; // AG for RR
 
     // Constructor
-    public Process(String name, int arrival, int burst, int priority) {
+    public Process(int id, String name, int arrival, int burst, int priority) {
+        this.id = id;
         this.name = name;
         this.arrival = arrival;
         this.burst = burst;
@@ -47,17 +49,17 @@ class Process {
         this.AG = calcAG(this);
     }
 
-    protected int calcRF(){
+    protected int calcRF() {
         return new Random().nextInt(21);
     }
 
-    protected int calcAG(Process p){
+    protected int calcAG(Process p) {
         int rf = calcRF(), ag;
-        if(rf < 10){
+        if (rf < 10) {
             ag = rf + p.arrival + p.burst;
-        }else if(rf > 10){
+        } else if (rf > 10) {
             ag = 10 + p.arrival + p.burst;
-        }else {
+        } else {
             ag = p.priority + p.arrival + p.burst;
         }
         return ag;
@@ -74,6 +76,7 @@ class Scheduler {
     public ArrayList<Integer> times; // list of times
     double avgWaiting; // average waiting time
     double avgTurnaround; // average turnaround time
+    HashMap<Integer, Integer> quantums; // map of quantums for RR
 
     // Constructor
     public Scheduler(int n, int cs, int quantum, Process[] processes) {
@@ -81,6 +84,7 @@ class Scheduler {
         this.cs = cs;
         this.processes = processes;
         this.quantum = quantum;
+        this.quantums = new HashMap<>();
     }
 
     // Method to sort the processes by arrival time
@@ -96,12 +100,15 @@ class Scheduler {
     private void init() {
         order = new ArrayList<>();
         times = new ArrayList<>();
+        this.quantums = new HashMap<>();
         avgWaiting = 0;
         avgTurnaround = 0;
-        for (Process p : processes) {
-            p.waiting = 0;
-            p.turnaround = 0;
-            p.remaining = p.burst;
+
+        for (int i = 0; i < n; i++) {
+            processes[i].remaining = processes[i].burst;
+            processes[i].waiting = 0;
+            processes[i].turnaround = 0;
+            quantums.put(processes[i].id, quantum);
         }
     }
 
@@ -295,42 +302,96 @@ class Scheduler {
         avgTurnaround /= n;
     }
 
+    protected int meanQuantum() {
+        int sum = 0;
+        for (int i : quantums.values())
+            sum += i;
+        return sum / n;
+    }
+
     public void RR() {
         init();
         sortByArrival();
-        Queue<Process> q = new LinkedList<>();
+//        for ready processes
+        ArrayDeque<Process> ready = new ArrayDeque<>();
+//        for sort processes by AG
+        PriorityQueue<Process> AGQueue = new PriorityQueue<>(new Comparator<Process>() {
+            @Override
+            public int compare(Process p1, Process p2) {
+                return p1.AG - p2.AG;
+            }
+        });
+
         int currentTime = 0;
         int nextProcess = 0;
-        while (!q.isEmpty() || nextProcess < n) {
+        while (!ready.isEmpty() || nextProcess < n) {
+//            add new arrived processes to ready queue
             while (nextProcess < n && processes[nextProcess].arrival <= currentTime) {
-                q.add(processes[nextProcess]);
+                ready.add(processes[nextProcess]);
+                AGQueue.add(processes[nextProcess]);
                 nextProcess++;
             }
-            if (!q.isEmpty()) {
-                Process current = q.poll();
-                order.add(current);
-                if (current.remaining <= quantum) {
-                    currentTime += current.remaining + cs;
-                    current.waiting = currentTime - current.arrival - current.burst - cs;
-                    current.turnaround = currentTime - cs;
-                    avgWaiting += current.waiting;
-                    avgTurnaround += current.turnaround;
-                } else {
-                    currentTime += quantum + cs;
-                    current.remaining -= quantum;
-                    q.add(current);
-                }
-                if(order.size() > 1 && current == order.get(order.size() - 2)){
-                    currentTime -= cs;
-                }
-                times.add(currentTime - cs);
-            } else {
+            if (ready.isEmpty()) {
                 currentTime++;
+                continue;
             }
+
+            Process current = ready.poll();
+            if (current.remaining == 0) {
+                continue;
+            }
+//            get quantum of current process
+            int currentQuantum = quantums.get(current.id);
+//            remove cs time if the current process is same the previous process
+            if (order.size() > 1 && current == order.get(order.size() - 2)) {
+                currentTime -= cs;
+            }
+            order.add(current);
+//            run ceil (50%)) of its Quantum time for current process
+            currentTime += Math.min(current.remaining, (currentQuantum + 1) / 2);
+            current.remaining -= Math.min(current.remaining, (currentQuantum + 1) / 2);
+
+            boolean complete = false;
+//            run second by second and check if the process is preempted or not
+            for (int i = 0; i < currentQuantum / 2 && current.remaining > 0; i++) {
+//                add new arrived processes to ready queue
+                while (nextProcess < n && processes[nextProcess].arrival <= currentTime) {
+                    ready.add(processes[nextProcess]);
+                    AGQueue.add(processes[nextProcess]);
+                    nextProcess++;
+                }
+//                if the process is preempted then add it to ready queue and update its quantum
+                if (AGQueue.peek().AG < current.AG) {
+                    if (!ready.isEmpty() && ready.peek().id != AGQueue.peek().id)
+                        ready.addFirst(AGQueue.peek());
+                    quantums.put(current.id, currentQuantum + currentQuantum / 2 - i);
+                    complete = true;
+                    break;
+                }
+                currentTime++;
+                current.remaining--;
+            }
+
+            currentTime += cs;
+//            if the process is not finished then add it to ready queue and update its quantum
+            if (current.remaining > 0) {
+                ready.add(current);
+                if (!complete)
+                    quantums.put(current.id, currentQuantum + (meanQuantum() + 9) / 10);
+            } else {
+//                if the process is finished then update its waiting and turnaround time
+                current.waiting = currentTime - current.arrival - current.burst - cs;
+                current.turnaround = currentTime - cs;
+                avgWaiting += current.waiting;
+                avgTurnaround += current.turnaround;
+                quantums.remove(current.id);
+                AGQueue.remove(current);
+
+            }
+            times.add(currentTime - cs);
         }
         avgWaiting /= n;
         avgTurnaround /= n;
-        
     }
 
     // Method to print the output of the scheduler
@@ -360,15 +421,14 @@ class Scheduler {
 class CPU_Schedulers {
     public static void main(String[] args) {
         // number of processes
-        int n = 5, cs = 0, quantum = 10;
+        int n = 4, cs = 0, quantum = 4;
         // Create an array of processes
         Process[] processes = new Process[n];
-        processes[0] = new Process("P1", 0, 5, 1);
-        processes[1] = new Process("P2", 0, 15, 2);
-        processes[2] = new Process("P3", 0, 12, 3);
-        processes[3] = new Process("P4", 0, 25, 4);
-        processes[4] = new Process("P5", 0, 8, 5);
-          
+        processes[0] = new Process(0, "P1", 0, 17, 4);
+        processes[1] = new Process(1, "P2", 3, 6, 9);
+        processes[2] = new Process(2, "P3", 4, 10, 3);
+        processes[3] = new Process(3, "P4", 29, 4, 8);
+
         // Create a scheduler object with 5 processes and 2 context switching
         Scheduler scheduler = new Scheduler(n, cs, quantum, processes);
 
@@ -398,4 +458,3 @@ class CPU_Schedulers {
 
     }
 }
-// P1(20) P2(37) P3(57) P4(77) P1(97) P3(117) P4(121) P1(134) P3(154) P3(162)

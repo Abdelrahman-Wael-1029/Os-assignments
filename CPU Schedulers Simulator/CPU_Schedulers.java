@@ -21,7 +21,6 @@
 // ▪ Average Turnaround Time 
 
 import java.util.*;
-import java.util.Random;
 
 // A class to represent a process
 class Process {
@@ -100,8 +99,29 @@ class Scheduler {
         return n;
     }
 
-    public Process[] getProcesses() {
-        return processes;
+    public ArrayList<Process> getProcesses() {
+        return new ArrayList<>(Arrays.asList(processes));
+    }
+
+    public Object[][] getProcessesInformation() {
+        // return processes rows for JPanel
+        Object[][] rows = new Object[n][8];
+        for (int i = 0; i < n; i++) {
+            rows[i][0] = processes[i].name;
+            rows[i][1] = processes[i].arrival;
+            rows[i][2] = processes[i].burst;
+            rows[i][3] = processes[i].priority;
+            rows[i][4] = processes[i].AG;
+            rows[i][5] = processes[i].color;
+            rows[i][6] = processes[i].waiting;
+            rows[i][7] = processes[i].turnaround;
+        }
+        return rows;
+    }
+
+    public Object[] getProcessesInformationColumns() {
+        // return processes columns names for JPanel
+        return new Object[] { "Name", "Arrival", "Burst", "Priority", "AG", "Color", "Waiting", "Turnaround" };
     }
 
     public ArrayList<Process> getOrder() {
@@ -112,11 +132,11 @@ class Scheduler {
         return times;
     }
 
-    public double getAvgWaiting() {
+    public double getAvgWaitingTime() {
         return avgWaiting;
     }
 
-    public double getAvgTurnaround() {
+    public double getAvgTurnaroundTime() {
         return avgTurnaround;
     }
 
@@ -166,6 +186,7 @@ class Scheduler {
         // Divide the average waiting and turnaround time by the number of processes
         avgWaiting /= n;
         avgTurnaround /= n;
+        Arrays.sort(processes, Comparator.comparingInt(p -> p.id));
     }
 
     // Method to simulate SRTF scheduler
@@ -230,6 +251,7 @@ class Scheduler {
         // Divide the average waiting and turnaround time by the number of processes
         avgWaiting /= n;
         avgTurnaround /= n;
+        Arrays.sort(processes, Comparator.comparingInt(p -> p.id));
     }
 
     // Method to simulate non-preemptive priority scheduler
@@ -277,6 +299,7 @@ class Scheduler {
         // Divide the average waiting and turnaround time by the number of processes
         avgWaiting /= n;
         avgTurnaround /= n;
+        Arrays.sort(processes, Comparator.comparingInt(p -> p.id));
     }
 
     protected int meanQuantum() {
@@ -286,7 +309,7 @@ class Scheduler {
         return sum / n;
     }
 
-    public void RR() {
+    public void AG() {
         init();
 
         // for ready processes
@@ -360,6 +383,7 @@ class Scheduler {
         }
         avgWaiting /= n;
         avgTurnaround /= n;
+        Arrays.sort(processes, Comparator.comparingInt(p -> p.id));
     }
 
     // Method to print the output of the scheduler
@@ -374,7 +398,6 @@ class Scheduler {
 
         // Print the waiting time and turnaround time for each process
         System.out.println("Waiting Time and Turnaround Time for each process:");
-        Arrays.sort(processes, Comparator.comparingInt(p -> p.id));
         for (Process p : processes) {
             System.out.println(p.name + ": Waiting Time = " + p.waiting + ", Turnaround Time = " + p.turnaround);
         }
@@ -390,43 +413,53 @@ class CPU_Schedulers {
     public static void main(String[] args) {
         // test case
         // // number of processes
-        // int num_processes = 2, RR_quantum = 3, context_switching = 0;
+         int num_processes = 10, RR_quantum = 3, context_switching = 0;
 
-        // // Create an array of processes
-        // Process[] processes = new Process[num_processes];
-        // processes[0] = new Process(0, "P1", 0, 1, 3, "#123300");
-        // processes[1] = new Process(1, "P2", 1, 7, 6, "#123300");
+         // Create an array of processes
+         Process[] processes = new Process[num_processes];
+            for (int i = 0; i < num_processes; i++) {
+                String name = "P" + (i + 1);
+                int arrival = new Random().nextInt(100);
+                int burst = new Random().nextInt(100) + 1;
+                int priority = new Random().nextInt(100) + 1;
+                StringBuilder color = new StringBuilder("#");
+                for (int j = 0; j < 6; j++) {
+                    color.append(Integer.toHexString(new Random().nextInt(16)));
+                }
+
+                processes[i] = new Process(i, name, arrival, burst, priority, color.toString());
+            }
 
         // number of processes and context switching and quantum
-        int num_processes, RR_quantum, context_switching;
-        Scanner input = new Scanner(System.in);
-        System.out.print("Enter number of processes: ");
-        num_processes = input.nextInt();
-        System.out.print("Enter context switching: ");
-        context_switching = input.nextInt();
-        System.out.print("Enter Round Robin quantum: ");
-        RR_quantum = input.nextInt();
-
-        // Create an array of processes
-        Process[] processes = new Process[num_processes];
-        for (int i = 0; i < num_processes; i++) {
-            System.out.println("Enter process " + (i + 1) + " parameters:");
-            System.out.print("Name: ");
-            String name = input.next();
-            System.out.print("Arrival Time: ");
-            int arrival = input.nextInt();
-            System.out.print("Burst Time: ");
-            int burst = input.nextInt();
-            System.out.print("Priority Number: ");
-            int priority = input.nextInt();
-            String color = "#";
-            for (int j = 0; j < 6; j++) {
-                color += Integer.toHexString(new Random().nextInt(16));
-            }
-            
-            processes[i] = new Process(i + 1, name, arrival, burst, priority, color);
-        }
-        System.out.println();
+//        int num_processes, RR_quantum, context_switching;
+//        Scanner input = new Scanner(System.in);
+//        System.out.print("Enter number of processes: ");
+//        num_processes = input.nextInt();
+//        System.out.print("Enter context switching: ");
+//        context_switching = input.nextInt();
+//        System.out.print("Enter Round Robin quantum: ");
+//        RR_quantum = input.nextInt();
+//
+//        // Create an array of processes
+//        Process[] processes = new Process[num_processes];
+//        for (int i = 0; i < num_processes; i++) {
+//            System.out.println("Enter process " + (i + 1) + " parameters:");
+//            System.out.print("Name: ");
+//            String name = input.next();
+//            System.out.print("Arrival Time: ");
+//            int arrival = input.nextInt();
+//            System.out.print("Burst Time: ");
+//            int burst = input.nextInt();
+//            System.out.print("Priority Number: ");
+//            int priority = input.nextInt();
+//            String color = "#";
+//            for (int j = 0; j < 6; j++) {
+//                color += Integer.toHexString(new Random().nextInt(16));
+//            }
+//
+//            processes[i] = new Process(i + 1, name, arrival, burst, priority, color);
+//        }
+//        System.out.println();
 
         // Create a scheduler object with 5 processes and 2 context switching
         Scheduler scheduler = new Scheduler(num_processes, context_switching, RR_quantum, processes);
@@ -450,11 +483,11 @@ class CPU_Schedulers {
         System.out.println();
 
         // Simulate the RR scheduler
-        System.out.println("RR scheduler:");
-        scheduler.RR();
+        System.out.println("AG scheduler:");
+        scheduler.AG();
         scheduler.printOutput();
         System.out.println();
 
-        GUI gui = new GUI(scheduler);
+        new GUI(scheduler);
     }
 }

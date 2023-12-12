@@ -122,6 +122,7 @@ public class GUI extends JFrame {
         // add the data from scheduler order
         ArrayList<Process> processesOrder = scheduler.getOrder(), processes = scheduler.getProcesses();
         ArrayList<Integer> times = scheduler.getTimes();
+        ganttChart.setPreferredSize(new Dimension(1090, processes.size() * 50));
         // get the max time to make the graph
         int endTime = times.get(times.size() - 1), x = 100;
         // make the graph.

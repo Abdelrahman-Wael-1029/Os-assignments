@@ -83,18 +83,20 @@ class Scheduler {
         return new ArrayList<>(Arrays.asList(processes));
     }
 
-    public Object[][] getProcessesInformation() {
+    public Object[][] getProcessesInformation(int type) {
         // return processes rows for JPanel
-        Object[][] rows = new Object[n][8];
+        Object[][] rows = new Object[n][8 - type];
         for (int i = 0; i < n; i++) {
             rows[i][0] = processes[i].name;
             rows[i][1] = processes[i].arrival;
             rows[i][2] = processes[i].burst;
-            rows[i][3] = processes[i].priority;
-            rows[i][4] = processes[i].AG;
-            rows[i][5] = processes[i].color;
-            rows[i][6] = processes[i].waiting;
-            rows[i][7] = processes[i].turnaround;
+            if (type < 2)
+                rows[i][3] = processes[i].priority;
+            if (type == 0)
+                rows[i][4] = processes[i].AG;
+            rows[i][5 - type] = processes[i].color;
+            rows[i][6 - type] = processes[i].waiting;
+            rows[i][7 - type] = processes[i].turnaround;
         }
         return rows;
     }
@@ -110,9 +112,20 @@ class Scheduler {
         return rows;
     }
 
-    public Object[] getProcessesInformationColumns() {
+    public Object[] getProcessesInformationColumns(int type) {
         // return processes columns names for JPanel
-        return new Object[]{"Name", "Arrival", "Burst", "Priority", "AG", "Color", "Waiting", "Turnaround"};
+        Object[] columns = new Object[8 - type];
+        columns[0] = "Name";
+        columns[1] = "Arrival Time";
+        columns[2] = "Burst Time";
+        if (type < 2)
+            columns[3] = "Priority";
+        if (type == 0)
+            columns[4] = "AG";
+        columns[5 - type] = "Color";
+        columns[6 - type] = "Waiting Time";
+        columns[7 - type] = "Turnaround Time";
+        return columns;
     }
 
     public Object[] getQuantumHistoryColumns() {

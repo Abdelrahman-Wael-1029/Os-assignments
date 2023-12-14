@@ -1,25 +1,3 @@
-// Write a java program to simulate the following schedulers: 
-// 1. Non-Preemptive Shortest- Job First (SJF) (using context switching) 
-// 2. Shortest- Remaining Time First (SRTF) Scheduling (with the solving of starvation 
-// problem using any way can be executed correctly) 
-// 3. Non-preemptive Priority Scheduling (with the solving of starvation problem using any 
-// way can be executed correctly) 
-// Program Input 
-// ▪ Number of processes 
-// ▪ context switching 
-// For Each Process you need to receive the following parameters from the user: 
-// ▪ Process Name 
-// ▪ Process Arrival Time 
-// ▪ Process Burst Time 
-// ▪ Process Priority Number 
-// Program Output
-//  For each scheduler output the following: 
-// ▪ Processes execution order 
-// ▪ Waiting Time for each process 
-// ▪ Turnaround Time for each process 
-// ▪ Average Waiting Time 
-// ▪ Average Turnaround Time 
-
 import java.util.*;
 
 // A class to represent a process
@@ -29,7 +7,7 @@ class Process {
     int arrival; // arrival time
     int burst; // burst time
     int priority; // priority number
-    int waiting; // waiting time
+    int waiting; // waiting time (turnaround - burst)
     int turnaround; // turnaround time
     int remaining; // remaining time for SRTF
     int AG; // AG for RR
@@ -59,16 +37,16 @@ class Process {
 
 // A class to simulate the schedulers
 class Scheduler {
-    private int n; // number of processes
-    private int cs; // context switching
-    private int quantum; // quantum for RR
-    private Process[] processes; // array of processes
+    private final int n; // number of processes
+    private final int cs; // context switching
+    private final int quantum; // quantum for RR
+    private final Process[] processes; // array of processes
     private ArrayList<Process> order; // list of processes in execution order
     private ArrayList<Integer> times; // list of times
     private double avgWaiting; // average waiting time
     private double avgTurnaround; // average turnaround time
     private HashMap<Integer, Integer> quantums; // map of quantums for RR
-    private ArrayList<ArrayList<Integer>> quantumHistory; // list of quantums for RR
+    private final ArrayList<ArrayList<Integer>> quantumHistory; // list of quantums for RR
 
     // Constructor
     public Scheduler(int n, int cs, int quantum, Process[] processes) {
@@ -95,10 +73,6 @@ class Scheduler {
         }
 
         Arrays.sort(processes, Comparator.comparingInt(p -> p.arrival));
-    }
-
-    public int getN() {
-        return n;
     }
 
     public int getContextSwitching() {
@@ -138,7 +112,7 @@ class Scheduler {
 
     public Object[] getProcessesInformationColumns() {
         // return processes columns names for JPanel
-        return new Object[] { "Name", "Arrival", "Burst", "Priority", "AG", "Color", "Waiting", "Turnaround" };
+        return new Object[]{"Name", "Arrival", "Burst", "Priority", "AG", "Color", "Waiting", "Turnaround"};
     }
 
     public Object[] getQuantumHistoryColumns() {
@@ -167,7 +141,7 @@ class Scheduler {
     }
     // Method to simulate non-preemptive SJF scheduler
 
-    public void sjf() {
+    public void SJF() {
         init();
 
         // Create a priority queue to store the ready processes
@@ -216,13 +190,13 @@ class Scheduler {
     }
     // Method to simulate SRTF scheduler
 
-    public void srtf() {
+    public void SRTF() {
         init();
 
         // Create a priority queue to store the ready processes
         // The priority is based on the remaining time (shorter remaining time has
         // higher priority)
-        PriorityQueue<Process> queue = new PriorityQueue<>(Comparator.comparingInt(p -> p.remaining));
+        PriorityQueue<Process> queue = new PriorityQueue<>(Comparator.comparingInt(p -> p.remaining - p.waiting));
 
         // Initialize the current time and the index of the next process
         int currentTime = 0;
@@ -248,14 +222,11 @@ class Scheduler {
                 order.add(current);
                 // Check if the process has finished or not
                 if (current.remaining == 1) {
-                    // If the process has finished, then update the current time and the waiting
-                    // time and turnaround time of the process
+                    // If the process has finished, then update the current time and turnaround time of the process
                     currentTime++;
                     current.turnaround = currentTime - current.arrival;
-                    current.waiting = current.turnaround - current.burst;
                     times.add(currentTime);
 
-                    avgWaiting += current.waiting;
                     avgTurnaround += current.turnaround;
                 } else {
                     // If the process has not finished, then decrement its remaining time and add it
@@ -267,7 +238,12 @@ class Scheduler {
                     currentTime++;
                     times.add(currentTime);
                 }
-
+                for (Process p : queue) {
+                    if (p != current) {
+                        p.waiting++;
+                        avgWaiting++;
+                    }
+                }
             } else {
                 // If the queue is empty, then increment the current time
                 currentTime++;
@@ -281,13 +257,13 @@ class Scheduler {
     }
     // Method to simulate non-preemptive priority scheduler
 
-    public void priority() {
+    public void Priority() {
         init();
 
         // Create a priority queue to store the ready processes
         // The priority is based on the priority number (lower priority number has
         // higher priority)
-        PriorityQueue<Process> queue = new PriorityQueue<>(Comparator.comparingInt(p -> p.priority));
+        PriorityQueue<Process> queue = new PriorityQueue<>(Comparator.comparingInt(p -> p.priority - p.waiting));
 
         // Initialize the current time and the index of the next process
         int currentTime = 0;
@@ -314,8 +290,12 @@ class Scheduler {
                 current.waiting = current.turnaround - current.burst;
                 times.add(currentTime);
 
-                avgWaiting += current.waiting;
                 avgTurnaround += current.turnaround;
+
+                for (Process p : queue) {
+                    if (p != current)
+                        p.waiting = currentTime - p.arrival;
+                }
             } else {
                 // If the queue is empty, then increment the current time
                 currentTime++;
@@ -323,7 +303,7 @@ class Scheduler {
         }
 
         // Divide the average waiting and turnaround time by the number of processes
-        avgWaiting /= n;
+        avgWaiting = Arrays.stream(processes).mapToDouble(p -> p.waiting).sum() / n;
         avgTurnaround /= n;
         Arrays.sort(processes, Comparator.comparingInt(p -> p.id));
     }
@@ -438,56 +418,36 @@ class Scheduler {
 // A class to test the schedulers
 class CPU_Schedulers {
     public static void main(String[] args) {
-        // test case
-        // // number of processes
-         int num_processes = 10, RR_quantum = 3, context_switching = 10;
-
-         // Create an array of processes
-         Process[] processes = new Process[num_processes];
-            for (int i = 0; i < num_processes; i++) {
-                String name = "P" + (i + 1);
-                int arrival = new Random().nextInt(100);
-                int burst = new Random().nextInt(100) + 1;
-                int priority = new Random().nextInt(100) + 1;
-                StringBuilder color = new StringBuilder("#");
-                for (int j = 0; j < 6; j++) {
-                    color.append(Integer.toHexString(new Random().nextInt(16)));
-                }
-
-                processes[i] = new Process(i, name, arrival, burst, priority, color.toString());
-            }
-
         // number of processes and context switching and quantum
-//        int num_processes, RR_quantum, context_switching;
-//        Scanner input = new Scanner(System.in);
-//        System.out.print("Enter number of processes: ");
-//        num_processes = input.nextInt();
-//        System.out.print("Enter context switching: ");
-//        context_switching = input.nextInt();
-//        System.out.print("Enter Round Robin quantum: ");
-//        RR_quantum = input.nextInt();
-//
-//        // Create an array of processes
-//        Process[] processes = new Process[num_processes];
-//        for (int i = 0; i < num_processes; i++) {
-//            System.out.println("Enter process " + (i + 1) + " parameters:");
-//            System.out.print("Name: ");
-//            String name = input.next();
-//            System.out.print("Arrival Time: ");
-//            int arrival = input.nextInt();
-//            System.out.print("Burst Time: ");
-//            int burst = input.nextInt();
-//            System.out.print("Priority Number: ");
-//            int priority = input.nextInt();
-//            String color;
-//            do {
-//                System.out.print("Color (in hexadecimal): #");
-//                color = "#" + input.next();
-//            } while (!color.matches("#[0-9a-fA-F]{6}"));
-//
-//            processes[i] = new Process(i + 1, name, arrival, burst, priority, color);
-//        }
-//        System.out.println();
+        int num_processes, RR_quantum, context_switching;
+        Scanner input = new Scanner(System.in);
+        System.out.print("Enter number of processes: ");
+        num_processes = input.nextInt();
+        System.out.print("Enter context switching: ");
+        context_switching = input.nextInt();
+        System.out.print("Enter Round Robin quantum: ");
+        RR_quantum = input.nextInt();
+
+        // Create an array of processes
+        Process[] processes = new Process[num_processes];
+        for (int i = 0; i < num_processes; i++) {
+            System.out.println("Enter process " + (i + 1) + " parameters:");
+            System.out.print("Name: ");
+            String name = input.next();
+            System.out.print("Arrival Time: ");
+            int arrival = input.nextInt();
+            System.out.print("Burst Time: ");
+            int burst = input.nextInt();
+            System.out.print("Priority Number: ");
+            int priority = input.nextInt();
+            String color;
+            do {
+                System.out.print("Color (in hexadecimal): #");
+                color = "#" + input.next();
+            } while (!color.matches("#[0-9a-fA-F]{6}"));
+
+            processes[i] = new Process(i + 1, name, arrival, burst, priority, color);
+        }
 
         // Create a scheduler object with 5 processes and 2 context switching
         Scheduler scheduler = new Scheduler(num_processes, context_switching, RR_quantum, processes);

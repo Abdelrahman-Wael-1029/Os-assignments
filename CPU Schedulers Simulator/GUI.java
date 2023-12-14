@@ -1,6 +1,6 @@
 import java.awt.*;
-import java.util.ArrayList;
 import javax.swing.*;
+import java.util.ArrayList;
 
 public class GUI extends JFrame {
     int WIDTH = 1200, HEIGHT = 700;
@@ -135,6 +135,9 @@ public class GUI extends JFrame {
 
     private void updateProcessesInformation() {
         table = new JTable(scheduler.getProcessesInformation(), scheduler.getProcessesInformationColumns());
+        table.setPreferredSize(new Dimension(75 * table.getColumnCount(), 16 * table.getRowCount()));
+        // make the table column width fit the content
+        table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         scrollPane = new JScrollPane(table);
         scrollPane.setBounds(0, 40, 490, 410);
         processes_information.removeAll();
@@ -150,6 +153,8 @@ public class GUI extends JFrame {
         quantum_history.add(quantum_history_label);
         if (show) {
             table = new JTable(scheduler.getQuantumHistory(), scheduler.getQuantumHistoryColumns());
+            table.setPreferredSize(new Dimension(75 * table.getColumnCount(), 16 * table.getRowCount()));
+            table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
             scrollPane = new JScrollPane(table);
             scrollPane.setBounds(0, 40, 490, 120);
             quantum_history.add(scrollPane);
@@ -168,13 +173,13 @@ public class GUI extends JFrame {
         // add the data from scheduler order
         ArrayList<Process> processesOrder = scheduler.getOrder(), processes = scheduler.getProcesses();
         ArrayList<Integer> times = scheduler.getTimes();
-        ganttChart.setPreferredSize(new Dimension(1090, processes.size() * 50));
+        ganttChart.setPreferredSize(new Dimension(processes.size() * 101, processes.size() * 50));
         // get the max time to make the graph
-        int endTime = times.get(times.size() - 1), x = 100;
+        int endTime = times.get(times.size() - 1), x = 100 + processesOrder.get(0).arrival * processes.size() * 100 / endTime;
         // make the graph.
         for (int i = 0; i < processesOrder.size(); i++) {
             JLabel label = new JLabel();
-            int width = (times.get(i) - (i == 0 ? 0 : times.get(i - 1) + cs)) * 1000 / endTime;
+            int width = (times.get(i) - (i == 0 ? processesOrder.get(i).arrival : times.get(i - 1) + cs)) * processes.size() * 100 / endTime;
             label.setBounds(x, processesOrder.get(i).id * 50, width, 50);
             label.setOpaque(true);
             label.setBackground(Color.decode(processesOrder.get(i).color));
@@ -183,7 +188,7 @@ public class GUI extends JFrame {
             ganttChart.add(label);
             x += width + cs;
             // display a tooltip when hover over the process
-            label.setToolTipText((i == 0 ? 0 : times.get(i - 1) + cs) + " - " + times.get(i) + " ms");
+            label.setToolTipText((i == 0 ? processesOrder.get(i).arrival : times.get(i - 1) + cs) + " - " + times.get(i) + " ms");
         }
         // make the y axis
         for (int i = 0; i < processes.size(); i++) {
@@ -240,7 +245,7 @@ public class GUI extends JFrame {
         this.add(buttonsPanel, BorderLayout.SOUTH);
 
         SJF.addActionListener(e -> {
-            scheduler.sjf();
+            scheduler.SJF();
             scheduler.printOutput();
             scheduler_name_value.setText("SJF");
             avg_waiting_time_value.setText(String.valueOf(scheduler.getAvgWaitingTime()));
@@ -251,7 +256,7 @@ public class GUI extends JFrame {
         });
 
         SRTF.addActionListener(e -> {
-            scheduler.srtf();
+            scheduler.SRTF();
             scheduler.printOutput();
             scheduler_name_value.setText("SRTF");
             avg_waiting_time_value.setText(String.valueOf(scheduler.getAvgWaitingTime()));
@@ -262,7 +267,7 @@ public class GUI extends JFrame {
         });
 
         Priority.addActionListener(e -> {
-            scheduler.priority();
+            scheduler.Priority();
             scheduler.printOutput();
             scheduler_name_value.setText("Priority");
             avg_waiting_time_value.setText(String.valueOf(scheduler.getAvgWaitingTime()));

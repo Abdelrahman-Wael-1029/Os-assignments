@@ -68,6 +68,7 @@ class Scheduler {
     private double avgWaiting; // average waiting time
     private double avgTurnaround; // average turnaround time
     private HashMap<Integer, Integer> quantums; // map of quantums for RR
+    private ArrayList<ArrayList<Integer>> quantumHistory; // list of quantums for RR
 
     // Constructor
     public Scheduler(int n, int cs, int quantum, Process[] processes) {
@@ -76,6 +77,7 @@ class Scheduler {
         this.processes = processes;
         this.quantum = quantum;
         this.quantums = new HashMap<>();
+        this.quantumHistory = new ArrayList<>();
     }
 
     private void init() {
@@ -99,6 +101,10 @@ class Scheduler {
         return n;
     }
 
+    public int getContextSwitching() {
+        return cs;
+    }
+
     public ArrayList<Process> getProcesses() {
         return new ArrayList<>(Arrays.asList(processes));
     }
@@ -119,9 +125,29 @@ class Scheduler {
         return rows;
     }
 
+    public Object[][] getQuantumHistory() {
+        // return quantum history rows for JPanel
+        Object[][] rows = new Object[quantumHistory.size()][n];
+        for (int i = 0; i < quantumHistory.size(); i++) {
+            for (int j = 0; j < n; j++) {
+                rows[i][j] = quantumHistory.get(i).get(j);
+            }
+        }
+        return rows;
+    }
+
     public Object[] getProcessesInformationColumns() {
         // return processes columns names for JPanel
         return new Object[] { "Name", "Arrival", "Burst", "Priority", "AG", "Color", "Waiting", "Turnaround" };
+    }
+
+    public Object[] getQuantumHistoryColumns() {
+        // return quantum history columns names for JPanel
+        Object[] columns = new Object[n];
+        for (int i = 0; i < n; i++) {
+            columns[i] = processes[i].name;
+        }
+        return columns;
     }
 
     public ArrayList<Process> getOrder() {
@@ -139,8 +165,8 @@ class Scheduler {
     public double getAvgTurnaroundTime() {
         return avgTurnaround;
     }
-
     // Method to simulate non-preemptive SJF scheduler
+
     public void sjf() {
         init();
 
@@ -188,8 +214,8 @@ class Scheduler {
         avgTurnaround /= n;
         Arrays.sort(processes, Comparator.comparingInt(p -> p.id));
     }
-
     // Method to simulate SRTF scheduler
+
     public void srtf() {
         init();
 
@@ -253,8 +279,8 @@ class Scheduler {
         avgTurnaround /= n;
         Arrays.sort(processes, Comparator.comparingInt(p -> p.id));
     }
-
     // Method to simulate non-preemptive priority scheduler
+
     public void priority() {
         init();
 
@@ -380,13 +406,14 @@ class Scheduler {
                 AGQueue.remove(current);
             }
             times.add(currentTime);
+            quantumHistory.add(new ArrayList<>(quantums.values()));
         }
         avgWaiting /= n;
         avgTurnaround /= n;
         Arrays.sort(processes, Comparator.comparingInt(p -> p.id));
     }
-
     // Method to print the output of the scheduler
+
     public void printOutput() {
         // Print the processes execution order
         System.out.println("Processes execution order:");
@@ -413,7 +440,7 @@ class CPU_Schedulers {
     public static void main(String[] args) {
         // test case
         // // number of processes
-         int num_processes = 10, RR_quantum = 3, context_switching = 0;
+         int num_processes = 10, RR_quantum = 3, context_switching = 10;
 
          // Create an array of processes
          Process[] processes = new Process[num_processes];
@@ -452,10 +479,11 @@ class CPU_Schedulers {
 //            int burst = input.nextInt();
 //            System.out.print("Priority Number: ");
 //            int priority = input.nextInt();
-//            String color = "#";
-//            for (int j = 0; j < 6; j++) {
-//                color += Integer.toHexString(new Random().nextInt(16));
-//            }
+//            String color;
+//            do {
+//                System.out.print("Color (in hexadecimal): #");
+//                color = "#" + input.next();
+//            } while (!color.matches("#[0-9a-fA-F]{6}"));
 //
 //            processes[i] = new Process(i + 1, name, arrival, burst, priority, color);
 //        }
@@ -463,30 +491,6 @@ class CPU_Schedulers {
 
         // Create a scheduler object with 5 processes and 2 context switching
         Scheduler scheduler = new Scheduler(num_processes, context_switching, RR_quantum, processes);
-        
-        // Simulate the non-preemptive SJF scheduler
-        System.out.println("Non-preemptive SJF scheduler:");
-        scheduler.sjf();
-        scheduler.printOutput();
-        System.out.println();
-
-        // Simulate the SRTF scheduler
-        System.out.println("SRTF scheduler:");
-        scheduler.srtf();
-        scheduler.printOutput();
-        System.out.println();
-
-        // Simulate the non-preemptive priority scheduler
-        System.out.println("Non-preemptive priority scheduler:");
-        scheduler.priority();
-        scheduler.printOutput();
-        System.out.println();
-
-        // Simulate the RR scheduler
-        System.out.println("AG scheduler:");
-        scheduler.AG();
-        scheduler.printOutput();
-        System.out.println();
 
         new GUI(scheduler);
     }

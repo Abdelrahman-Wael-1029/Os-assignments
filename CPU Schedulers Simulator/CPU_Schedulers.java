@@ -450,27 +450,25 @@ class CPU_Schedulers {
 
         // Create an array of processes
         Process[] processes = new Process[num_processes];
-//        for (int i = 0; i < num_processes; i++) {
-//            System.out.println("Enter process " + (i + 1) + " parameters:");
-//            System.out.print("Name: ");
-//            String name = input.next();
-//            System.out.print("Arrival Time: ");
-//            int arrival = input.nextInt();
-//            System.out.print("Burst Time: ");
-//            int burst = input.nextInt();
-//            System.out.print("Priority Number: ");
-//            int priority = input.nextInt();
-//            String color;
-//            do {
-//                System.out.print("Color (in hexadecimal): #");
-//                color = "#" + input.next();
-//            } while (!color.matches("#[0-9a-fA-F]{6}"));
-//
-//            processes[i] = new Process(i, name, arrival, burst, priority, color);
-//        }
+        for (int i = 0; i < num_processes; i++) {
+            System.out.println("Enter process " + (i + 1) + " parameters:");
+            System.out.print("Name: ");
+            String name = input.next();
+            System.out.print("Arrival Time: ");
+            int arrival = input.nextInt();
+            System.out.print("Burst Time: ");
+            int burst = input.nextInt();
+            System.out.print("Priority Number: ");
+            int priority = input.nextInt();
+            String color;
+            do {
+                System.out.print("Color (in hexadecimal): #");
+                color = "#" + input.next();
+            } while (!color.matches("#[0-9a-fA-F]{6}"));
 
-        processes[0] = new Process(0, "P1", 1000, 300, 3, "#ff0000");
-        processes[1] = new Process(1, "P2", 0, 200, 1, "#00ff00");
+            processes[i] = new Process(i, name, arrival, burst, priority, color);
+        }
+        
         // Create a scheduler object with 5 processes and 2 context switching
         Scheduler scheduler = new Scheduler(num_processes, context_switching, RR_quantum, processes);
 

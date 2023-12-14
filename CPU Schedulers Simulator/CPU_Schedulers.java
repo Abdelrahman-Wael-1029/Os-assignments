@@ -62,6 +62,7 @@ class Scheduler {
         order = new ArrayList<>();
         times = new ArrayList<>();
         quantums = new HashMap<>();
+        quantumHistory.clear();
         avgWaiting = 0;
         avgTurnaround = 0;
 
@@ -224,10 +225,9 @@ class Scheduler {
             if (!queue.isEmpty()) {
                 // Remove the process from the queue and add it to the execution order
                 Process current = queue.poll();
-                boolean same = false;
                 if (!order.isEmpty() && current == order.get(order.size() - 1)) {
                     order.remove(order.size() - 1);
-                    same = true;
+                    times.remove(times.size() - 1);
                 }
                 order.add(current);
                 // Check if the process has finished or not
@@ -246,10 +246,7 @@ class Scheduler {
                     // Update the current time
                     currentTime++;
                 }
-                if (same)
-                    times.get(times.size() - 1).set(1, currentTime);
-                else
-                    times.add(new ArrayList<>(Arrays.asList(currentTime - current.burst + current.remaining, currentTime)));
+                times.add(new ArrayList<>(Arrays.asList(Math.max(current.arrival, (times.size() != 0? times.get(times.size() - 1).get(1) : 0)), currentTime)));
                 for (Process p : queue) {
                     if (p != current) {
                         p.waiting++;
@@ -353,10 +350,9 @@ class Scheduler {
             if (current.remaining == 0) {
                 continue;
             }
-            boolean same = false;
             if (!order.isEmpty() && current == order.get(order.size() - 1)) {
                 order.remove(order.size() - 1);
-                same = true;
+                times.remove(times.size() - 1);
             }
             // get quantum of current process
             int currentQuantum = quantums.get(current.id);
@@ -402,10 +398,7 @@ class Scheduler {
                 quantums.put(current.id, 0);
                 AGQueue.remove(current);
             }
-            if (same)
-                times.get(times.size() - 1).set(1, currentTime);
-            else
-                times.add(new ArrayList<>(Arrays.asList(currentTime - current.burst + current.remaining, currentTime)));
+            times.add(new ArrayList<>(Arrays.asList(Math.max(current.arrival, (times.size() != 0? times.get(times.size() - 1).get(1) : 0)), currentTime)));
             quantumHistory.add(new ArrayList<>(quantums.values()));
         }
         avgWaiting /= n;
@@ -439,33 +432,44 @@ class Scheduler {
 class CPU_Schedulers {
     public static void main(String[] args) {
         // number of processes and context switching and quantum
-        int num_processes, RR_quantum, context_switching;
-        Scanner input = new Scanner(System.in);
-        System.out.print("Enter number of processes: ");
-        num_processes = input.nextInt();
-        System.out.print("Enter context switching: ");
-        context_switching = input.nextInt();
-        System.out.print("Enter Round Robin quantum: ");
-        RR_quantum = input.nextInt();
+//        int num_processes, RR_quantum, context_switching;
+//        Scanner input = new Scanner(System.in);
+//        System.out.print("Enter number of processes: ");
+//        num_processes = input.nextInt();
+//        System.out.print("Enter context switching: ");
+//        context_switching = input.nextInt();
+//        System.out.print("Enter Round Robin quantum: ");
+//        RR_quantum = input.nextInt();
+//
+//        // Create an array of processes
+//        Process[] processes = new Process[num_processes];
+//        for (int i = 0; i < num_processes; i++) {
+//            System.out.println("Enter process " + (i + 1) + " parameters:");
+//            System.out.print("Name: ");
+//            String name = input.next();
+//            System.out.print("Arrival Time: ");
+//            int arrival = input.nextInt();
+//            System.out.print("Burst Time: ");
+//            int burst = input.nextInt();
+//            System.out.print("Priority Number: ");
+//            int priority = input.nextInt();
+//            String color;
+//            do {
+//                System.out.print("Color (in hexadecimal): #");
+//                color = "#" + input.next();
+//            } while (!color.matches("#[0-9a-fA-F]{6}"));
+//
+//            processes[i] = new Process(i, name, arrival, burst, priority, color);
+//        }
+        int num_processes = 5, RR_quantum = 2, context_switching = 1;
 
-        // Create an array of processes
         Process[] processes = new Process[num_processes];
         for (int i = 0; i < num_processes; i++) {
-            System.out.println("Enter process " + (i + 1) + " parameters:");
-            System.out.print("Name: ");
-            String name = input.next();
-            System.out.print("Arrival Time: ");
-            int arrival = input.nextInt();
-            System.out.print("Burst Time: ");
-            int burst = input.nextInt();
-            System.out.print("Priority Number: ");
-            int priority = input.nextInt();
-            String color;
-            do {
-                System.out.print("Color (in hexadecimal): #");
-                color = "#" + input.next();
-            } while (!color.matches("#[0-9a-fA-F]{6}"));
-
+            String name = "P" + (i + 1);
+            int arrival = new Random().nextInt(10);
+            int burst = new Random().nextInt(10) + 1;
+            int priority = new Random().nextInt(10);
+            String color = String.format("#%06x", new Random().nextInt(0xffffff + 1));
             processes[i] = new Process(i, name, arrival, burst, priority, color);
         }
         

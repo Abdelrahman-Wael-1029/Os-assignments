@@ -173,13 +173,13 @@ public class GUI extends JFrame {
         // add the data from scheduler order
         ArrayList<Process> processesOrder = scheduler.getOrder(), processes = scheduler.getProcesses();
         ArrayList<ArrayList<Integer>> times = scheduler.getTimes();
-        // get the max time to make the graph
-        int endTime = times.get(times.size() - 1).get(1), totalWidth = 0;
+        // get the max width to make the graph
+        int totalWidth = 0;
         // make the graph.
         for (int i = 0; i < processesOrder.size(); i++) {
             JLabel label = new JLabel();
-            int width = (times.get(i).get(1) - times.get(i).get(0)) * processes.size() * 100 / endTime;
-            label.setBounds((i == 0? 100 : 0) + times.get(i).get(0) * processes.size() * 100 / endTime, processesOrder.get(i).id * 50, width, 50);
+            int width = (times.get(i).get(1) - times.get(i).get(0)) * 10;
+            label.setBounds(100 + times.get(i).get(0) * 10, processesOrder.get(i).id * 50, width, 50);
             label.setOpaque(true);
             label.setBackground(Color.decode(processesOrder.get(i).color));
             label.setHorizontalAlignment(JLabel.CENTER);

@@ -123,9 +123,9 @@ public class GUI extends JFrame {
         quantum_history_label.setBounds(10, 10, 100, 20);
     }
 
-    private void updateCPUSchedulerGraph(int cs) {
+    private void updateCPUSchedulerGraph() {
         CPU_scheduler_graph.removeAll();
-        scrollPane = new JScrollPane(getGanttChart(cs));
+        scrollPane = new JScrollPane(getGanttChart());
         scrollPane.setBounds(0, 40, 800, 410);
         CPU_scheduler_graph.add(scrollPane);
         CPU_scheduler_graph.add(CPU_scheduler_graph_label);
@@ -164,7 +164,7 @@ public class GUI extends JFrame {
         quantum_history.repaint();
     }
 
-    private Component getGanttChart(int cs) {
+    private Component getGanttChart() {
         JPanel ganttChart = new JPanel();
         ganttChart.setLayout(null);
         ganttChart.setBackground(Color.gray);
@@ -172,24 +172,25 @@ public class GUI extends JFrame {
         ganttChart.setBounds(0, 0, 800, 450);
         // add the data from scheduler order
         ArrayList<Process> processesOrder = scheduler.getOrder(), processes = scheduler.getProcesses();
-        ArrayList<Integer> times = scheduler.getTimes();
-        ganttChart.setPreferredSize(new Dimension(processes.size() * 100, processes.size() * 50));
+        ArrayList<ArrayList<Integer>> times = scheduler.getTimes();
         // get the max time to make the graph
-        int endTime = times.get(times.size() - 1), x = 100 + processesOrder.get(0).arrival * processes.size() * 100 / endTime;
+        int endTime = times.get(times.size() - 1).get(1), totalWidth = 0;
         // make the graph.
         for (int i = 0; i < processesOrder.size(); i++) {
             JLabel label = new JLabel();
-            int width = (times.get(i) - (i == 0 ? processesOrder.get(i).arrival : times.get(i - 1) + cs)) * processes.size() * 100 / endTime;
-            label.setBounds(x, processesOrder.get(i).id * 50, width, 50);
+            int width = (times.get(i).get(1) - times.get(i).get(0)) * processes.size() * 100 / endTime;
+            label.setBounds((i == 0? 100 : 0) + times.get(i).get(0), processesOrder.get(i).id * 50, width, 50);
             label.setOpaque(true);
             label.setBackground(Color.decode(processesOrder.get(i).color));
             label.setHorizontalAlignment(JLabel.CENTER);
             label.setVerticalAlignment(JLabel.CENTER);
             ganttChart.add(label);
-            x += width + cs;
+            if (i == processesOrder.size() - 1)
+                totalWidth = label.getX() + label.getWidth();
             // display a tooltip when hover over the process
-            label.setToolTipText((i == 0 ? processesOrder.get(i).arrival : times.get(i - 1) + cs) + " - " + times.get(i) + " ms");
+            label.setToolTipText(times.get(i).get(0) + " - " + times.get(i).get(1) + " ms");
         }
+        ganttChart.setPreferredSize(new Dimension(totalWidth, processes.size() * 50));
         // make the y axis
         for (int i = 0; i < processes.size(); i++) {
             JLabel label = new JLabel(processes.get(i).name);
@@ -250,7 +251,7 @@ public class GUI extends JFrame {
             scheduler_name_value.setText("SJF");
             avg_waiting_time_value.setText(String.valueOf(scheduler.getAvgWaitingTime()));
             avg_turnaround_time_value.setText(String.valueOf(scheduler.getAvgTurnaroundTime()));
-            updateCPUSchedulerGraph(scheduler.getContextSwitching());
+            updateCPUSchedulerGraph();
             updateProcessesInformation(2);
             updateQuantumHistory(false);
         });
@@ -261,7 +262,7 @@ public class GUI extends JFrame {
             scheduler_name_value.setText("SRTF");
             avg_waiting_time_value.setText(String.valueOf(scheduler.getAvgWaitingTime()));
             avg_turnaround_time_value.setText(String.valueOf(scheduler.getAvgTurnaroundTime()));
-            updateCPUSchedulerGraph(0);
+            updateCPUSchedulerGraph();
             updateProcessesInformation(2);
             updateQuantumHistory(false);
         });
@@ -272,7 +273,7 @@ public class GUI extends JFrame {
             scheduler_name_value.setText("Priority");
             avg_waiting_time_value.setText(String.valueOf(scheduler.getAvgWaitingTime()));
             avg_turnaround_time_value.setText(String.valueOf(scheduler.getAvgTurnaroundTime()));
-            updateCPUSchedulerGraph(0);
+            updateCPUSchedulerGraph();
             updateProcessesInformation(1);
             updateQuantumHistory(false);
         });
@@ -283,7 +284,7 @@ public class GUI extends JFrame {
             scheduler_name_value.setText("AG");
             avg_waiting_time_value.setText(String.valueOf(scheduler.getAvgWaitingTime()));
             avg_turnaround_time_value.setText(String.valueOf(scheduler.getAvgTurnaroundTime()));
-            updateCPUSchedulerGraph(0);
+            updateCPUSchedulerGraph();
             updateProcessesInformation(0);
             updateQuantumHistory(true);
         });

@@ -446,7 +446,7 @@ class CPU_Schedulers {
                 color = "#" + input.next();
             } while (!color.matches("#[0-9a-fA-F]{6}"));
 
-            processes[i] = new Process(i + 1, name, arrival, burst, priority, color);
+            processes[i] = new Process(i, name, arrival, burst, priority, color);
         }
 
         // Create a scheduler object with 5 processes and 2 context switching
